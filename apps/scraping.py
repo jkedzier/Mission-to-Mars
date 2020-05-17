@@ -2,6 +2,9 @@
 from splinter import Browser
 from bs4 import BeautifulSoup
 import pandas as pd
+import datetime as dt
+
+executable_path = {'executable_path': 'chromedriver.exe'}
 
 def scrape_all():
     # Initiate headless driver for deployment
@@ -9,16 +12,15 @@ def scrape_all():
     news_title, news_paragraph = mars_news(browser)
     # Run all scraping functions and store results in dictionary
     data = {
-        "news_title": news_title,
-        "news_paragraph": news_paragraph,
-        "featured_image": featured_image(browser),
-        "facts": mars_facts(),
-        "last_modified": dt.datetime.now()
+    "news_title": news_title,
+    "news_paragraph": news_paragraph,
+    "featured_image": featured_image(browser),
+    "facts": mars_facts(),
+    "last_modified": dt.datetime.now(),
+    "hemishpere_info": mars_hemi(browser)
     }
     browser.quit()
     return data
-
-
 
 def mars_news(browser):
 
@@ -92,6 +94,29 @@ def mars_facts():
     
     # Convert dataframe into HTML format, add bootstrap
     return df.to_html()
+
+def mars_hemi(browser):
+    hemisphere_url='https://astrogeology.usgs.gov/search/results?q=hemisphere+enhanced&k1=target&v1=Mars'
+    browser.visit(hemisphere_url)
+    html = browser.html
+    hemisphere_soup = BeautifulSoup(html, 'html.parser')
+
+    results_box = hemisphere_soup.find_all('h3')
+
+    hemispheres=[]
+    for hemisphere in results_box:
+        hemispheres.append(hemisphere.text)
+    hemisphere_url=[]
+
+    for h in hemispheres:
+        hemisphere_info={}
+        browser.click_link_by_partial_text(h)
+        hemisphere_info["title"]=h
+        hemisphere_info["img_url"]=browser.find_by_text('Sample')['href']
+        hemisphere_url.append(hemisphere_info)
+        browser.back()
+        
+    return hemisphere_url
 
 
 if __name__ == "__main__":
